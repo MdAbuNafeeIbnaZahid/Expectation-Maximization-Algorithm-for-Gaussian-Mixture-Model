@@ -27,12 +27,25 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
 def runEMAlgo(dataSet, distCnt):
     row, column = np.shape(dataSet)
 
+    exampleCnt = row
+    featureCnt = column
 
+    
+
+# This will return a 1 X featureCnt dimensional array
 def getRandMu(featureCnt):
+    randMu = np.random.rand( 1, featureCnt )
+    return randMu
+
+def getRandSigma(featureCnt):
+    randSqAr = np.random.rand(featureCnt, featureCnt)
+    randSqArTrans = randSqAr.T
+    randSigma = randSqAr.dot(randSqArTrans)
+    return randSigma
 
 
 
 fileName = "Iris.csv"
 dataSet = getDataSet(fileName)
 trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
-print(trimmedDataSet)
+runEMAlgo(trimmedDataSet, 3)
