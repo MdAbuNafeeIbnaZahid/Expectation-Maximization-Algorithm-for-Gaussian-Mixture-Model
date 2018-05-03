@@ -43,8 +43,12 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
     for i in range(roundCnt):
         nAr = getNAr(dataSet=dataSet, muAr=muAr, sigmaAr=sigmaAr)
         wnAr = np.multiply(wAr, nAr)  # nwAr has size distCnt * exampleCnt
-        pAr = getPAr(wnAr=wnAr) #pAr has size   distCnt * exampleCnt
-        
+        wnArDen = np.sum(wnAr, axis=0)[np.newaxis]
+        pAr = wnAr / wnArDen;
+
+        logLikelihood = np.sum(np.log( wnArDen ) )  # log likelihood is a scalar value
+
+
 
 
 # This will return a 1 X featureCnt dimensional array
@@ -101,10 +105,6 @@ def getNAr(dataSet, muAr, sigmaAr):
 
 
 
-def getPAr(wnAr):
-    wnArDen = np.sum(wnAr,axis=0)[np.newaxis]
-    pAr = wnAr / wnArDen;
-    return pAr
 
 
 fileName = "Iris.csv"
