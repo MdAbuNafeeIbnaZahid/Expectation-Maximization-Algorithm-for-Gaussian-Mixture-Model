@@ -25,20 +25,28 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
     return trimmedDataSet
 
 
-def runEMAlgo(dataSet, distCnt):
+def runEMAlgo(dataSet, distCnt, roundCnt):
     row, column = np.shape(dataSet)
 
     exampleCnt = row
     featureCnt = column
 
 
-    kRandMu = getKRandMu(featureCnt, distCnt)  # This is a k * 1 * featureCnt dimensional array
-    kRandSigma = getKRandSigma(featureCnt, distCnt) # This is a k * featureCnt * featureCnt dimensional array
+    muAr = getKRandMu(featureCnt, distCnt)  # This is a k * 1 * featureCnt dimensional array
+    sigmaAr = getKRandSigma(featureCnt, distCnt) # This is a k * featureCnt * featureCnt dimensional array
 
-    nAr = getNAr(dataSet=dataSet, muAr=kRandMu,sigmaAr=kRandSigma)
+    wAr = np.random.rand(distCnt, 1)
+    wAr = wAr / np.sum(wAr)
+    print(wAr)
+
+
     # nAr is a distCnt * exampleCnt dimensional Array
 
-
+    for i in range(roundCnt):
+        nAr = getNAr(dataSet=dataSet, muAr=muAr, sigmaAr=sigmaAr)
+        nwAr = np.multiply(wAr, nAr)
+        print(nwAr.shape)
+        print(nwAr)
 
 # This will return a 1 X featureCnt dimensional array
 def getRandMu(featureCnt):
@@ -98,4 +106,4 @@ def getNAr(dataSet, muAr, sigmaAr):
 fileName = "Iris.csv"
 dataSet = getDataSet(fileName)
 trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
-runEMAlgo(trimmedDataSet, 3)
+runEMAlgo(trimmedDataSet, 3, 1)
