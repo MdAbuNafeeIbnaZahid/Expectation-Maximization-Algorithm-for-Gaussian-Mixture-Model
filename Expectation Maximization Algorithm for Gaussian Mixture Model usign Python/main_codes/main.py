@@ -30,19 +30,41 @@ def runEMAlgo(dataSet, distCnt):
     exampleCnt = row
     featureCnt = column
 
-    
+    kRandMu = getKRandMu(featureCnt, distCnt)
+    kRandSigma = getKRandSigma(featureCnt, distCnt)
+
+    print( kRandSigma )
+
+
 
 # This will return a 1 X featureCnt dimensional array
 def getRandMu(featureCnt):
     randMu = np.random.rand( 1, featureCnt )
     return randMu
 
+def getKRandMu(featureCnt, k):
+    ret = np.zeros( (k, featureCnt) )
+
+    for i in range(k):
+        ret[i, :] = getRandMu(featureCnt)
+
+    return ret;
+
+# This will return a featureCnt X featureCnt dimensional array
 def getRandSigma(featureCnt):
     randSqAr = np.random.rand(featureCnt, featureCnt)
     randSqArTrans = randSqAr.T
     randSigma = randSqAr.dot(randSqArTrans)
     return randSigma
 
+# This will return a k X featureCnt X featureCnt dimensional array
+def getKRandSigma(featureCnt, k):
+    ret = np.zeros( ( k, featureCnt, featureCnt ) )
+
+    for i in range(k):
+        ret[i, :, :] = getRandSigma(featureCnt)
+
+    return ret;
 
 
 fileName = "Iris.csv"
