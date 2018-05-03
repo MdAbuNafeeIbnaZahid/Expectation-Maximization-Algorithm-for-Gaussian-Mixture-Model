@@ -35,18 +35,17 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
     muAr = getKRandMu(featureCnt, distCnt)  # This is a k * 1 * featureCnt dimensional array
     sigmaAr = getKRandSigma(featureCnt, distCnt) # This is a k * featureCnt * featureCnt dimensional array
 
-    wAr = np.random.rand(distCnt, 1)
-    wAr = wAr / np.sum(wAr)
-    print(wAr)
+    wAr = (1.0 / distCnt) * np.ones( [distCnt, 1] );
 
 
     # nAr is a distCnt * exampleCnt dimensional Array
 
     for i in range(roundCnt):
         nAr = getNAr(dataSet=dataSet, muAr=muAr, sigmaAr=sigmaAr)
-        nwAr = np.multiply(wAr, nAr)
-        print(nwAr.shape)
-        print(nwAr)
+        wnAr = np.multiply(wAr, nAr)  # nwAr has size distCnt * exampleCnt
+        pAr = getPAr(wnAr=wnAr) #pAr has size   distCnt * exampleCnt
+        
+
 
 # This will return a 1 X featureCnt dimensional array
 def getRandMu(featureCnt):
@@ -94,13 +93,18 @@ def getNAr(dataSet, muAr, sigmaAr):
     for i in range(distCnt):
         sigma = sigmaAr[i, :, :]
         mu = muAr[i, :]
-        print( mu.shape )
         for j in range(exampleCnt):
             example = dataSet[j,:];
             nAr[i,j] = multivariate_normal.pdf(x=example, mean=mu, cov=sigma)
 
     return nAr
 
+
+
+def getPAr(wnAr):
+    wnArDen = np.sum(wnAr,axis=0)[np.newaxis]
+    pAr = wnAr / wnArDen;
+    return pAr
 
 
 fileName = "Iris.csv"
