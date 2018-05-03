@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import multivariate_normal
 
 import definitions
 
@@ -30,10 +31,12 @@ def runEMAlgo(dataSet, distCnt):
     exampleCnt = row
     featureCnt = column
 
-    kRandMu = getKRandMu(featureCnt, distCnt)
-    kRandSigma = getKRandSigma(featureCnt, distCnt)
 
-    print( kRandSigma )
+    kRandMu = getKRandMu(featureCnt, distCnt)  # This is a k * 1 * featureCnt dimensional array
+    kRandSigma = getKRandSigma(featureCnt, distCnt) # This is a k * featureCnt * featureCnt dimensional array
+
+    nAr = getNAr(dataSet=dataSet, muAr=kRandMu,sigmaAr=kRandSigma)
+    # nAr is a distCnt * exampleCnt dimensional Array
 
 
 
@@ -42,6 +45,7 @@ def getRandMu(featureCnt):
     randMu = np.random.rand( 1, featureCnt )
     return randMu
 
+# This will return a k * featureCnt dimensional array
 def getKRandMu(featureCnt, k):
     ret = np.zeros( (k, featureCnt) )
 
@@ -65,6 +69,30 @@ def getKRandSigma(featureCnt, k):
         ret[i, :, :] = getRandSigma(featureCnt)
 
     return ret;
+
+
+
+# This will return a   distCnt * exampleCnt dimensional array
+def getNAr(dataSet, muAr, sigmaAr):
+    # dataSet is a exampleCnt * featureCnt dimensional array
+    # muAr is  a distCnt * featureCnt dimensional array
+    # sigmaAr is a distCnt * featureCnt * featureCnt dimensional array
+
+    exampleCnt, featureCnt = dataSet.shape
+    distCnt = sigmaAr.shape[0]
+
+    nAr = np.zeros( (distCnt, exampleCnt) )
+
+    for i in range(distCnt):
+        sigma = sigmaAr[i, :, :]
+        mu = muAr[i, :]
+        print( mu.shape )
+        for j in range(exampleCnt):
+            example = dataSet[j,:];
+            nAr[i,j] = multivariate_normal.pdf(x=example, mean=mu, cov=sigma)
+
+    return nAr
+
 
 
 fileName = "Iris.csv"
