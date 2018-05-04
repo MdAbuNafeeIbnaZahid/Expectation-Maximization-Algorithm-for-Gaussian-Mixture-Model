@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import multivariate_normal
+import copy
 
 import definitions
 
@@ -22,6 +23,7 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
     keepColumnList = [ x for x in fullColumnList if x not in columnsToThrow ]
 
     trimmedDataSet = dataSet[:,keepColumnList]
+    trimmedDataSet = trimmedDataSet.astype(np.float)
     return trimmedDataSet
 
 
@@ -31,9 +33,20 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
     exampleCnt = row
     featureCnt = column
 
+    # singleMu = np.mean( dataSet, axis=0 )
+    # singleSigma = np.dot(dataSet.T, dataSet) / exampleCnt ;
+    # print( singleSigma )
 
-    muAr = getKRandMu(featureCnt, distCnt)  # This is a k * 1 * featureCnt dimensional array
-    sigmaAr = getKRandSigma(featureCnt, distCnt) # This is a k * featureCnt * featureCnt dimensional array
+
+
+
+    muAr = getKRandMu(dataSet, distCnt)  # This is a k * 1 * featureCnt dimensional array
+    print( "printing muAr "   )
+    print(muAr)
+
+    sigmaAr = getKRandSigma(dataSet, distCnt) # This is a k * featureCnt * featureCnt dimensional array
+    print("printing sigmaAr" )
+    print( sigmaAr )
 
     wAr = (1.0 / distCnt) * np.ones( [distCnt, 1] );
 
@@ -42,42 +55,56 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
 
     for i in range(roundCnt):
         nAr = getNAr(dataSet=dataSet, muAr=muAr, sigmaAr=sigmaAr)
-        wnAr = np.multiply(wAr, nAr)  # nwAr has size distCnt * exampleCnt
-        wnArDen = np.sum(wnAr, axis=0)[np.newaxis]
-        pAr = wnAr / wnArDen;
+        WMulN = np.multiply(wAr, nAr)  # nwAr has size distCnt * exampleCnt
+        wnArDistSum = np.sum(WMulN, axis=0)[np.newaxis]
+        pAr = WMulN / wnArDistSum;
 
-        logLikelihood = np.sum(np.log( wnArDen ) )  # log likelihood is a scalar value
+        mStep(dataSet=dataSet, oldMuAr=muAr, oldSigmaAr=sigmaAr, pAr=pAr, oldWAr=wAr)
 
+        logLikelihood = np.sum(np.log( wnArDistSum ) )  # log likelihood is a scalar value
+
+
+def getRandomScaled(ar):
+    randomAr = np.random.rand(*ar.shape)
+    scaleAr = randomAr * 2
+
+    ret = np.multiply(ar, scaleAr)
+    return ret;
 
 
 
 # This will return a 1 X featureCnt dimensional array
-def getRandMu(featureCnt):
-    randMu = np.random.rand( 1, featureCnt )
-    return randMu
+def getRandMu(dataSet):
+    randDS = getRandomScaled(dataSet)
+    randMu = np.mean(randDS, axis=0)
+    return randMu;
 
 # This will return a k * featureCnt dimensional array
-def getKRandMu(featureCnt, k):
-    ret = np.zeros( (k, featureCnt) )
+def getKRandMu(dataSet, k):
+    ret = np.zeros( (k, dataSet.shape[1]) )
 
     for i in range(k):
-        ret[i, :] = getRandMu(featureCnt)
+        ret[i, :] = getRandMu(dataSet)
 
     return ret;
 
 # This will return a featureCnt X featureCnt dimensional array
-def getRandSigma(featureCnt):
-    randSqAr = np.random.rand(featureCnt, featureCnt)
-    randSqArTrans = randSqAr.T
-    randSigma = randSqAr.dot(randSqArTrans)
+def getRandSigma(dataSet):
+    exampleCnt = dataSet.shape[0]
+
+    randDS = getRandomScaled(dataSet)
+    randSigma = np.dot(randDS.T, randDS) / exampleCnt;
+
     return randSigma
 
 # This will return a k X featureCnt X featureCnt dimensional array
-def getKRandSigma(featureCnt, k):
+def getKRandSigma(dataSet, k):
+    featureCnt = dataSet.shape[1]
+
     ret = np.zeros( ( k, featureCnt, featureCnt ) )
 
     for i in range(k):
-        ret[i, :, :] = getRandSigma(featureCnt)
+        ret[i, :, :] = getRandSigma(dataSet=dataSet)
 
     return ret;
 
@@ -102,6 +129,24 @@ def getNAr(dataSet, muAr, sigmaAr):
             nAr[i,j] = multivariate_normal.pdf(x=example, mean=mu, cov=sigma)
 
     return nAr
+
+
+
+
+def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
+
+    # pAr has size  distCnt * exampleCnt
+
+    pArExampleSum = np.sum(pAr, axis=1)[np.newaxis]  # pArExampleSum is a   1 * distCnt matrix
+    print( pArExampleSum )
+    disCnt = pArExampleSum.shape[1]
+
+    newMuAr = copy.deepcopy(oldMuAr)
+    newSigmaAr = copy.deepcopy(oldSigmaAr)
+    newWAr = copy.deepcopy(oldWAr)
+
+    for i in range(disCnt):
+        pass
 
 
 
