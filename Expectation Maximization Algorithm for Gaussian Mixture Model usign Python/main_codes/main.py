@@ -28,27 +28,28 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
 
 
 def runEMAlgo(dataSet, distCnt, roundCnt):
-    row, column = np.shape(dataSet)
 
-    exampleCnt = row
-    featureCnt = column
+    exampleCnt, featureCnt = dataSet.shape
 
-    # singleMu = np.mean( dataSet, axis=0 )
-    # singleSigma = np.dot(dataSet.T, dataSet) / exampleCnt ;
-    # print( singleSigma )
+    wAr = (1.0 / distCnt) * np.ones([distCnt, 1]);
+    muAr = np.zeros( (distCnt, featureCnt) )
+    sigmaAr = np.zeros( (distCnt, featureCnt, featureCnt) )
+
+    for i in range(distCnt):
+        randDS = getRandomScaled(dataSet)
+        muAr[i] = np.mean(randDS, axis=0)
+        sigmaAr[i] = np.dot(randDS.T, randDS) / exampleCnt;
 
 
+    # muAr = getKRandMu(dataSet, distCnt)  # This is a k * 1 * featureCnt dimensional array
+    # sigmaAr = getKRandSigma(dataSet, distCnt) # This is a k * featureCnt * featureCnt dimensional array
 
+    print( "shape of initial muAr" )
+    print( muAr.shape )
 
-    muAr = getKRandMu(dataSet, distCnt)  # This is a k * 1 * featureCnt dimensional array
-    print( "printing muAr "   )
-    print(muAr)
+    print( "shape of initial sigmaAR " )
+    print( sigmaAr.shape )
 
-    sigmaAr = getKRandSigma(dataSet, distCnt) # This is a k * featureCnt * featureCnt dimensional array
-    print("printing sigmaAr" )
-    print( sigmaAr )
-
-    wAr = (1.0 / distCnt) * np.ones( [distCnt, 1] );
 
 
     # nAr is a distCnt * exampleCnt dimensional Array
@@ -59,9 +60,33 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
         wnArDistSum = np.sum(WMulN, axis=0)[np.newaxis]
         pAr = WMulN / wnArDistSum;
 
-        mStep(dataSet=dataSet, oldMuAr=muAr, oldSigmaAr=sigmaAr, pAr=pAr, oldWAr=wAr)
+        logLikelihood = np.sum(np.log(wnArDistSum))  # log likelihood is a scalar value
 
-        logLikelihood = np.sum(np.log( wnArDistSum ) )  # log likelihood is a scalar value
+        print( i )
+        print( logLikelihood )
+
+
+        newValues = mStep(dataSet=dataSet, oldMuAr=muAr, oldSigmaAr=sigmaAr, pAr=pAr, oldWAr=wAr)
+
+        muAr = newValues.get('newMuAr')
+        assert muAr is not None
+
+        wAr = newValues.get('newWAr')
+        assert wAr is not None
+
+        sigmaAr = newValues.get('newSigmaAr')
+        assert sigmaAr is not None
+
+
+    print("Printing muAr")
+    print( muAr )
+
+    print("printing wAR")
+    print( wAr )
+
+    print( "printing sigmaAr" )
+    print( sigmaAr )
+
 
 
 def getRandomScaled(ar):
@@ -135,18 +160,47 @@ def getNAr(dataSet, muAr, sigmaAr):
 
 def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 
+    exampleCnt = dataSet.shape[0]
+
     # pAr has size  distCnt * exampleCnt
+    pArExampleSum = np.sum(pAr, axis=1)[np.newaxis]
+    pArExampleSum = pArExampleSum.T # pArExampleSum is a   distCnt * 1 matrix
 
-    pArExampleSum = np.sum(pAr, axis=1)[np.newaxis]  # pArExampleSum is a   1 * distCnt matrix
-    print( pArExampleSum )
-    disCnt = pArExampleSum.shape[1]
+    disCnt = pArExampleSum.shape[0]
+    # print( disCnt )
 
-    newMuAr = copy.deepcopy(oldMuAr)
+
     newSigmaAr = copy.deepcopy(oldSigmaAr)
-    newWAr = copy.deepcopy(oldWAr)
+
+
+    newWAr = pArExampleSum / exampleCnt
+
+    newMuAr = np.dot( pAr, dataSet ) / pArExampleSum;
+    # print( newMuAr )
+
 
     for i in range(disCnt):
-        pass
+        muForThisDist = oldMuAr[i]
+        # print( muForThisDist )
+
+        xMinMu = dataSet - muForThisDist  # This is a exampleCnt * featureCnt dimensional array
+
+        pArForThisDist = pAr[i,:][np.newaxis]  # this is a 1 * 150 dimensional array
+        pArForThisDist = pArForThisDist.T  # this is a 150 * 1 dimensiona array
+        # print( pArForThisDist.shape )
+        # print( pArForThisDist )
+
+
+        xMinMuMulPArForThisDist = np.multiply( xMinMu, pArForThisDist ) # this is a exampleCnt *
+                                                            # featureCnt dimensinal array
+        # print( xMinMuMulPArForThisDist.shape )
+        newSigmaAr[i] = np.dot(xMinMuMulPArForThisDist.T, xMinMu) / np.sum(pArForThisDist)
+
+
+    return {'newWAr' : newWAr, 'newMuAr' : newMuAr, 'newSigmaAr' : newSigmaAr}
+
+
+
 
 
 
@@ -155,4 +209,4 @@ def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 fileName = "Iris.csv"
 dataSet = getDataSet(fileName)
 trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
-runEMAlgo(trimmedDataSet, 3, 1)
+runEMAlgo(trimmedDataSet, distCnt=3, roundCnt=100)
