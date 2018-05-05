@@ -4,6 +4,48 @@ import copy
 
 import definitions
 
+# This will generate some examples each having two features
+def generateDataSet(distCnt, exampleCnt):
+    featureCnt = 2
+    dataSet = np.zeros( ( exampleCnt, featureCnt) )
+
+    trueWAr = np.full( (1, distCnt), 1.0/distCnt )
+
+    trueMuAr = np.random.rand( distCnt, featureCnt )
+    print("trueMuAr")
+    print(trueMuAr)
+
+    trueSigmaAr = getRandomSigmaAr(distCnt=distCnt, featureCnt=featureCnt)
+    print('trueSigmaAr')
+    print(trueSigmaAr)
+
+    for j in range(exampleCnt):
+        zj = np.random.choice(distCnt)
+
+        currentMu = trueMuAr[zj]
+        # print( "currentMu" )
+        # print( currentMu )
+
+        currentSigma = trueSigmaAr[zj]
+        # print('currentSigma')
+        # print( currentSigma )
+
+        dataSet[j] = np.random.multivariate_normal(mean=currentMu, cov=currentSigma)
+
+
+    return dataSet
+
+def getRandomSigmaAr(distCnt, featureCnt):
+    randSigmaAr = np.random.rand( distCnt, featureCnt, featureCnt )
+    for i in range(distCnt):
+        randSigmaAr[i] = getRandSigma(featureCnt)
+    return randSigmaAr
+
+def getRandSigma(featureCnt):
+    randSqAr = np.random.rand(featureCnt, featureCnt)
+    randSigma = randSqAr * randSqAr.T;
+    return randSigma
+
 
 def getDataSet(fileName):
     pathToFile = definitions.ROOT_DIR + "/" + fileName;
@@ -62,8 +104,8 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
 
         logLikelihood = np.sum(np.log(wnArDistSum))  # log likelihood is a scalar value
 
-        print( i )
-        print( logLikelihood )
+        # print( i )
+        # print( logLikelihood )
 
 
         newValues = mStep(dataSet=dataSet, oldMuAr=muAr, oldSigmaAr=sigmaAr, pAr=pAr, oldWAr=wAr)
@@ -114,7 +156,7 @@ def getKRandMu(dataSet, k):
     return ret;
 
 # This will return a featureCnt X featureCnt dimensional array
-def getRandSigma(dataSet):
+def getRandSigmaFromDataSet(dataSet):
     exampleCnt = dataSet.shape[0]
 
     randDS = getRandomScaled(dataSet)
@@ -129,7 +171,7 @@ def getKRandSigma(dataSet, k):
     ret = np.zeros( ( k, featureCnt, featureCnt ) )
 
     for i in range(k):
-        ret[i, :, :] = getRandSigma(dataSet=dataSet)
+        ret[i, :, :] = getRandSigmaFromDataSet(dataSet=dataSet)
 
     return ret;
 
@@ -207,6 +249,9 @@ def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 
 
 fileName = "Iris.csv"
-dataSet = getDataSet(fileName)
-trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
-runEMAlgo(trimmedDataSet, distCnt=3, roundCnt=100)
+# dataSet = getDataSet(fileName)
+# trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
+
+dataSet = generateDataSet(3, 100)
+# print(dataSet)
+runEMAlgo(dataSet, distCnt=3, roundCnt=100)
