@@ -1,6 +1,10 @@
 import numpy as np
 from scipy.stats import multivariate_normal
 import copy
+import tkinter
+from matplotlib import pyplot as plt
+
+
 
 import definitions
 
@@ -252,6 +256,14 @@ fileName = "Iris.csv"
 # dataSet = getDataSet(fileName)
 # trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
 
-dataSet = generateDataSet(3, 100)
+dataSet = generateDataSet(3, 1000)
+
+print(plt.isinteractive() )
+print("Will plot the dataSet")
+plt.scatter(dataSet[:,0], dataSet[:,1])
+print("dataSet plotted")
+
 # print(dataSet)
 runEMAlgo(dataSet, distCnt=3, roundCnt=100)
+
+plt.show()
