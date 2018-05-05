@@ -6,25 +6,47 @@ from matplotlib import pyplot as plt
 
 
 
+
 import definitions
 
-# This will generate some examples each having two features
-def generateDataSet(distCnt, exampleCnt):
-    featureCnt = 2
-    dataSet = np.zeros( ( exampleCnt, featureCnt) )
 
-    trueWAr = np.full( (1, distCnt), 1.0/distCnt )
 
-    trueMuAr = np.random.rand( distCnt, featureCnt )
-    print("trueMuAr")
-    print(trueMuAr)
+def getRandomWMuSigmaAr(distCnt, featureCnt):
+    retDic = {}
 
+    trueWAr = np.full((1, distCnt), 1.0 / distCnt)
+    trueMuAr = np.random.rand(distCnt, featureCnt)
     trueSigmaAr = getRandomSigmaAr(distCnt=distCnt, featureCnt=featureCnt)
-    print('trueSigmaAr')
-    print(trueSigmaAr)
+
+    retDic['w'] = trueWAr
+    retDic['mu'] = trueMuAr
+    retDic['sigma'] = trueSigmaAr
+
+    return retDic
+
+
+# This will generate some examples each having two features
+def generateDataSet(trueWAr, trueMuAr, trueSigmaAr, exampleCnt):
+    print("trueWAr")
+    print(trueWAr)
+
+    print("Inside generateDataSet")
+    print("exampleCnt")
+    print(exampleCnt)
+
+    featureCnt = trueMuAr.shape[1];
+    print("featureCnt")
+    print(featureCnt)
+
+    distCnt = trueWAr.shape[1];
+    print("distCnt")
+    print(distCnt)
+
+    dataSet = np.zeros((exampleCnt, featureCnt) )
+
 
     for j in range(exampleCnt):
-        zj = np.random.choice(distCnt)
+        zj = np.random.choice(a=np.arange(distCnt), p=trueWAr[0])
 
         currentMu = trueMuAr[zj]
         # print( "currentMu" )
@@ -37,6 +59,8 @@ def generateDataSet(distCnt, exampleCnt):
         dataSet[j] = np.random.multivariate_normal(mean=currentMu, cov=currentSigma)
 
 
+    print("dataSet.shape ")
+    print( dataSet.shape )
     return dataSet
 
 def getRandomSigmaAr(distCnt, featureCnt):
@@ -114,14 +138,9 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
 
         newValues = mStep(dataSet=dataSet, oldMuAr=muAr, oldSigmaAr=sigmaAr, pAr=pAr, oldWAr=wAr)
 
-        muAr = newValues.get('newMuAr')
-        assert muAr is not None
-
-        wAr = newValues.get('newWAr')
-        assert wAr is not None
-
-        sigmaAr = newValues.get('newSigmaAr')
-        assert sigmaAr is not None
+        muAr = newValues['newMuAr']
+        wAr = newValues['newWAr']
+        sigmaAr = newValues['newSigmaAr']
 
 
     print("Printing muAr")
@@ -252,18 +271,37 @@ def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 
 
 
-fileName = "Iris.csv"
+# fileName = "Iris.csv"
 # dataSet = getDataSet(fileName)
 # trimmedDataSet = getTrimmedDataSet(dataSet, [0, 5])
 
-dataSet = generateDataSet(3, 1000)
+featureCnt = 2
+distCnt = 3
 
-print(plt.isinteractive() )
-print("Will plot the dataSet")
-plt.scatter(dataSet[:,0], dataSet[:,1])
-print("dataSet plotted")
+
+trueWMuSigmaAr = getRandomWMuSigmaAr(distCnt=distCnt, featureCnt=featureCnt)
+
+trueWAr = trueWMuSigmaAr['w']
+trueMuAr = trueWMuSigmaAr['mu']
+trueSigmaAr = trueWMuSigmaAr['sigma']
+
+print("trueMuAr")
+print(trueMuAr)
+
+
+dataSet = generateDataSet(trueWAr=trueWAr, trueMuAr=trueMuAr, trueSigmaAr=trueSigmaAr,
+                          exampleCnt=150)
+
+print(trueMuAr)
+plt.scatter(trueMuAr[:,0], trueMuAr[:,1] )
+plt.show()
+
+
+plt.scatter(dataSet[:,0], dataSet[:,1] )
+plt.show()
 
 # print(dataSet)
 runEMAlgo(dataSet, distCnt=3, roundCnt=100)
 
-plt.show()
+
+
