@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
+
 FEMALE, MALE = 0, 1
 dt = np.dtype([('mass', 'f8'), ('height', 'f8'), ('gender', 'i2')])
 data = np.loadtxt('body.dat.txt', usecols=(22,23,24), dtype=dt)

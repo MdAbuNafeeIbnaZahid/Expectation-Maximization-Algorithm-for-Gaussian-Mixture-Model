@@ -4,6 +4,7 @@ import copy
 import tkinter
 from matplotlib import pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.patches import Ellipse
 
 
 
@@ -101,7 +102,7 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
     return trimmedDataSet
 
 
-def runEMAlgo(dataSet, distCnt, roundCnt, trueMuAr):
+def runEMAlgo(dataSet, distCnt, roundCnt, trueMuAr, trueSigmaAr):
 
     retDic = {}
 
@@ -142,6 +143,7 @@ def runEMAlgo(dataSet, distCnt, roundCnt, trueMuAr):
 
     # nAr is a distCnt * exampleCnt dimensional Array
 
+    fig, ax = plt.subplots()  # We need this to draw the ellipses
     for i in range(roundCnt):
         nAr = getNAr(dataSet=dataSet, muAr=muAr, sigmaAr=sigmaAr)
         WMulN = np.multiply(wAr, nAr)  # nwAr has size distCnt * exampleCnt
@@ -165,7 +167,8 @@ def runEMAlgo(dataSet, distCnt, roundCnt, trueMuAr):
         sigmaArSeq[i] = sigmaAr
 
 
-        drawEllipseWithInterval( trueMuAr=trueMuAr, currentMuAr=muAr, dataSet=dataSet )
+        drawEllipseWithInterval( trueMuAr=trueMuAr, currentMuAr=muAr, dataSet=dataSet, trueSigmaAr=trueSigmaAr,
+                                 currentSigmaAr=sigmaAr, axis=ax)
 
 
 
@@ -294,16 +297,58 @@ def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 
 
 
-def drawEllipseWithInterval( trueMuAr, currentMuAr, dataSet ):
+def drawEllipseWithInterval( trueMuAr, currentMuAr, dataSet, trueSigmaAr, currentSigmaAr, axis ):
     plt.cla()
 
-    plt.scatter(dataSet[:, 0], dataSet[:, 1], color='yellow')
-    plt.scatter( trueMuAr[:,0], trueMuAr[:,1], color='red' )
-    plt.scatter( currentMuAr[:,0], currentMuAr[:,1], color='blue' )
+    axis.scatter(dataSet[:, 0], dataSet[:, 1], color='yellow')
+    axis.scatter( trueMuAr[:,0], trueMuAr[:,1], color='red' )
+
+    print( trueSigmaAr )
+
+    for i in range(trueSigmaAr.shape[0]):
+        el = get_cov_ellipse( trueSigmaAr[i], trueMuAr[i], 2 )
+        # print("generated ellipse for distribution ")
+        # print(i)
+        axis.add_artist(el)
+
+
+    axis.scatter( currentMuAr[:,0], currentMuAr[:,1], color='blue' )
+
+
+    for i in range(currentSigmaAr.shape[0]):
+        el = get_cov_ellipse( currentSigmaAr[i], currentMuAr[i], 2  )
+        axis.add_artist(el)
+
+
 
 
     plt.draw()
     plt.pause(.2)
+
+
+
+
+def get_cov_ellipse(cov, centre, nstd, **kwargs):
+    """
+    Return a matplotlib Ellipse patch representing the covariance matrix
+    cov centred at centre and scaled by the factor nstd.
+
+    """
+
+    # Find and sort eigenvalues and eigenvectors into descending order
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    order = eigvals.argsort()[::-1]
+    eigvals, eigvecs = eigvals[order], eigvecs[:, order]
+
+    # The anti-clockwise angle to rotate our ellipse by
+    vx, vy = eigvecs[:,0][0], eigvecs[:,0][1]
+    theta = np.arctan2(vy, vx)
+
+    # Width and height of ellipse to draw
+    width, height = 2 * nstd * np.sqrt(eigvals)
+    return Ellipse(xy=centre, width=width, height=height,
+                   angle=np.degrees(theta), **kwargs, fill=False)
+
 
 
 
@@ -336,7 +381,7 @@ plt.scatter(dataSet[:,0], dataSet[:,1] )
 plt.show()
 
 # print(dataSet)
-resultFromEM = runEMAlgo(dataSet, distCnt=3, roundCnt=10000, trueMuAr=trueMuAr)
+resultFromEM = runEMAlgo(dataSet, distCnt=3, roundCnt=50000, trueMuAr=trueMuAr, trueSigmaAr=trueSigmaAr)
 
 
 print("trueMuAr")
@@ -351,15 +396,6 @@ print(resultFromEM['logLikelihood'])
 
 
 muArSeq = resultFromEM['muArSeq']
-for i in range( muArSeq.shape[0] ):
-    estimatedMuArForThisRound = muArSeq[i]
-
-    plt.cla()
-
-    plt.scatter(trueMuAr[:, 0], trueMuAr[:, 1])
-    plt.scatter( estimatedMuArForThisRound[:,0], estimatedMuArForThisRound[:,1] )
-    plt.draw()
-    plt.pause( 2 )
 
 
 
