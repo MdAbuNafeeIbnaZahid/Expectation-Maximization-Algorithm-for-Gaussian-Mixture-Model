@@ -122,6 +122,12 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
     print( "shape of initial sigmaAR " )
     print( sigmaAr.shape )
 
+    muArSeq = np.zeros((roundCnt, *muAr.shape) )
+    # print( muArSeq.shape )
+
+    sigmaArSq = np.zeros((roundCnt, *sigmaAr.shape) )
+    
+
 
 
     # nAr is a distCnt * exampleCnt dimensional Array
