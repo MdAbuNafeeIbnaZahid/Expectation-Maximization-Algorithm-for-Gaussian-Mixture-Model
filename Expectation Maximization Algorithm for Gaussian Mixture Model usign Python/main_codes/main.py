@@ -3,7 +3,7 @@ from scipy.stats import multivariate_normal
 import copy
 import tkinter
 from matplotlib import pyplot as plt
-
+import matplotlib.animation as animation
 
 
 
@@ -99,6 +99,8 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
 
 def runEMAlgo(dataSet, distCnt, roundCnt):
 
+    retDic = {}
+
     exampleCnt, featureCnt = dataSet.shape
 
     wAr = (1.0 / distCnt) * np.ones([distCnt, 1]);
@@ -131,9 +133,10 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
         pAr = WMulN / wnArDistSum;
 
         logLikelihood = np.sum(np.log(wnArDistSum))  # log likelihood is a scalar value
+        retDic['logLikelihood'] = logLikelihood
 
-        # print( i )
-        # print( logLikelihood )
+        print( i )
+        print( logLikelihood )
 
 
         newValues = mStep(dataSet=dataSet, oldMuAr=muAr, oldSigmaAr=sigmaAr, pAr=pAr, oldWAr=wAr)
@@ -142,16 +145,12 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
         wAr = newValues['newWAr']
         sigmaAr = newValues['newSigmaAr']
 
+    retDic['mu'] = muAr
+    retDic['w'] = wAr
+    retDic['sigma'] = sigmaAr
 
-    print("Printing muAr")
-    print( muAr )
 
-    print("printing wAR")
-    print( wAr )
-
-    print( "printing sigmaAr" )
-    print( sigmaAr )
-
+    return retDic
 
 
 def getRandomScaled(ar):
@@ -245,7 +244,7 @@ def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 
 
     for i in range(disCnt):
-        muForThisDist = oldMuAr[i]
+        muForThisDist = newMuAr[i]
         # print( muForThisDist )
 
         xMinMu = dataSet - muForThisDist  # This is a exampleCnt * featureCnt dimensional array
@@ -285,14 +284,12 @@ trueWAr = trueWMuSigmaAr['w']
 trueMuAr = trueWMuSigmaAr['mu']
 trueSigmaAr = trueWMuSigmaAr['sigma']
 
-print("trueMuAr")
-print(trueMuAr)
 
 
 dataSet = generateDataSet(trueWAr=trueWAr, trueMuAr=trueMuAr, trueSigmaAr=trueSigmaAr,
                           exampleCnt=150)
 
-print(trueMuAr)
+
 plt.scatter(trueMuAr[:,0], trueMuAr[:,1] )
 plt.show()
 
@@ -301,7 +298,24 @@ plt.scatter(dataSet[:,0], dataSet[:,1] )
 plt.show()
 
 # print(dataSet)
-runEMAlgo(dataSet, distCnt=3, roundCnt=100)
+resultFromEM = runEMAlgo(dataSet, distCnt=3, roundCnt=100)
 
 
+print("trueMuAr")
+print(trueMuAr)
 
+print("estimatedMuAr")
+estimatedMuAr = resultFromEM['mu']
+print( estimatedMuAr )
+
+print("logLikelihood")
+print(resultFromEM['logLikelihood'])
+
+
+plt.scatter( trueMuAr[:,0], trueMuAr[:,1] )
+plt.draw()
+plt.pause(20)
+
+plt.scatter( estimatedMuAr[:,0], estimatedMuAr[:,1] )
+plt.draw()
+plt.pause(20)
