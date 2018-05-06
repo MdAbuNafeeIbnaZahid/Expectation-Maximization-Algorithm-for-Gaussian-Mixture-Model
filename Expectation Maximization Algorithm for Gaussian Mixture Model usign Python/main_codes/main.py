@@ -9,13 +9,17 @@ import matplotlib.animation as animation
 
 import definitions
 
+SIDE = 20
+
+
+
 
 
 def getRandomWMuSigmaAr(distCnt, featureCnt):
     retDic = {}
 
     trueWAr = np.full((1, distCnt), 1.0 / distCnt)
-    trueMuAr = np.random.rand(distCnt, featureCnt)
+    trueMuAr = np.random.rand(distCnt, featureCnt) * SIDE ;
     trueSigmaAr = getRandomSigmaAr(distCnt=distCnt, featureCnt=featureCnt)
 
     retDic['w'] = trueWAr
@@ -97,7 +101,7 @@ def getTrimmedDataSet(dataSet, columnsToThrow):
     return trimmedDataSet
 
 
-def runEMAlgo(dataSet, distCnt, roundCnt):
+def runEMAlgo(dataSet, distCnt, roundCnt, trueMuAr):
 
     retDic = {}
 
@@ -109,8 +113,14 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
 
     for i in range(distCnt):
         randDS = getRandomScaled(dataSet)
-        muAr[i] = np.mean(randDS, axis=0)
+
+        # muAr[i] = np.mean(randDS, axis=0)
+        muAr[i] = np.random.rand( trueMuAr.shape[1] ) * SIDE;
+
+
         sigmaAr[i] = np.dot(randDS.T, randDS) / exampleCnt;
+        # randomSqAr = np.random.rand( featureCnt, featureCnt );
+        # sigmaAr[i] = np.dot( randomSqAr, randomSqAr.T ) ;
 
 
     # muAr = getKRandMu(dataSet, distCnt)  # This is a k * 1 * featureCnt dimensional array
@@ -125,8 +135,8 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
     muArSeq = np.zeros((roundCnt, *muAr.shape) )
     # print( muArSeq.shape )
 
-    sigmaArSq = np.zeros((roundCnt, *sigmaAr.shape) )
-    
+    sigmaArSeq = np.zeros((roundCnt, *sigmaAr.shape) )
+
 
 
 
@@ -151,9 +161,21 @@ def runEMAlgo(dataSet, distCnt, roundCnt):
         wAr = newValues['newWAr']
         sigmaAr = newValues['newSigmaAr']
 
-    retDic['mu'] = muAr
-    retDic['w'] = wAr
-    retDic['sigma'] = sigmaAr
+        muArSeq[i] = muAr
+        sigmaArSeq[i] = sigmaAr
+
+
+        drawEllipseWithInterval( trueMuAr=trueMuAr, currentMuAr=muAr, dataSet=dataSet )
+
+
+
+
+
+    retDic['muArSeq'] = muArSeq
+    retDic['sigmaArSeq'] = sigmaArSeq
+    retDic['estimatedMuAr'] = muAr
+    retDic['estimatedWAr'] = wAr
+    retDic['estimatedSigmaAr'] = sigmaAr
 
 
     return retDic
@@ -272,6 +294,16 @@ def mStep(dataSet, pAr, oldMuAr, oldSigmaAr, oldWAr):
 
 
 
+def drawEllipseWithInterval( trueMuAr, currentMuAr, dataSet ):
+    plt.cla()
+
+    plt.scatter(dataSet[:, 0], dataSet[:, 1], color='yellow')
+    plt.scatter( trueMuAr[:,0], trueMuAr[:,1], color='red' )
+    plt.scatter( currentMuAr[:,0], currentMuAr[:,1], color='blue' )
+
+
+    plt.draw()
+    plt.pause(.2)
 
 
 
@@ -304,24 +336,40 @@ plt.scatter(dataSet[:,0], dataSet[:,1] )
 plt.show()
 
 # print(dataSet)
-resultFromEM = runEMAlgo(dataSet, distCnt=3, roundCnt=100)
+resultFromEM = runEMAlgo(dataSet, distCnt=3, roundCnt=10000, trueMuAr=trueMuAr)
 
 
 print("trueMuAr")
 print(trueMuAr)
 
 print("estimatedMuAr")
-estimatedMuAr = resultFromEM['mu']
+estimatedMuAr = resultFromEM['estimatedMuAr']
 print( estimatedMuAr )
 
 print("logLikelihood")
 print(resultFromEM['logLikelihood'])
 
 
-plt.scatter( trueMuAr[:,0], trueMuAr[:,1] )
-plt.draw()
-plt.pause(20)
+muArSeq = resultFromEM['muArSeq']
+for i in range( muArSeq.shape[0] ):
+    estimatedMuArForThisRound = muArSeq[i]
 
-plt.scatter( estimatedMuAr[:,0], estimatedMuAr[:,1] )
-plt.draw()
-plt.pause(20)
+    plt.cla()
+
+    plt.scatter(trueMuAr[:, 0], trueMuAr[:, 1])
+    plt.scatter( estimatedMuArForThisRound[:,0], estimatedMuArForThisRound[:,1] )
+    plt.draw()
+    plt.pause( 2 )
+
+
+
+
+
+
+
+# plt.draw()
+# plt.pause(20)
+#
+# plt.scatter( estimatedMuAr[:,0], estimatedMuAr[:,1] )
+# plt.draw()
+# plt.pause(20)
